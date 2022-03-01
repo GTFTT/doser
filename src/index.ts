@@ -8,7 +8,7 @@ import {Doser} from "./doser";
 let timeout = undefined;
 
 function start() {
-  const doser = new Doser(true, 32)
+  const doser = new Doser(true, 10)//32
   doser.listen('atack', (data) => console.log("Attack: ", data.log))
   doser.listen('error', (data) => console.log("Error: ", data.log))
 
