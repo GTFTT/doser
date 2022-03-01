@@ -1,6 +1,8 @@
 import {Doser} from "./doser";
 
-const args = process.argv.slice(2);
+// Tutorial: https://khalilstemmler.com/blogs/typescript/node-starter-project/
+
+const args = process.argv;
 console.log('Script started: ', args);
 let timeout = undefined;
 
