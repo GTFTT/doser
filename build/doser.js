@@ -93,11 +93,7 @@ var Doser = /** @class */ (function () {
                             proxyes = proxyResponse.data;
                             console.log('Targets and proxies were loaded;');
                             return [2 /*return*/, {
-                                    sites: [
-                                        {
-                                            page: 'https://www.google.com/'
-                                        }
-                                    ],
+                                    sites: sites,
                                     proxyes: proxyes
                                 }];
                         }

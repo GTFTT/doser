@@ -78,11 +78,7 @@ export class Doser {
 
         console.log('Targets and proxies were loaded;')
         return {
-          sites: [
-            {
-              page: 'https://www.google.com/'
-            }
-          ],
+          sites,
           proxyes
         }
       }
