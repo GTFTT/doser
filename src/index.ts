@@ -9,7 +9,7 @@ import {Doser2} from "./doser2";
 let timeout = undefined;
 
 function start() {
-  const doser = new Doser2(true, 10)//32
+  const doser = new Doser2()//32
 
   console.log('Started DDOSing...')
   doser.start(); //Start DDOSing
