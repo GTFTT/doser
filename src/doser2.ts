@@ -1,4 +1,4 @@
-import axios, { AxiosError } from 'axios-https-proxy-fix'
+import axios from 'axios-https-proxy-fix'
 import { EventEmitter } from 'events'
 
 interface ProxyData {
