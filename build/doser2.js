@@ -118,7 +118,7 @@ var Doser2 = /** @class */ (function () {
                     .then(function () { return console.log('Tick done'); })
                     .catch(function (e) { return console.error('Tick with error'); });
             }, _this.tickingIntervalTime);
-        }, this.randomStartTimeInterval);
+        }, Math.random() * this.randomStartTimeInterval);
     };
     Doser2.prototype.stop = function () {
         this.working = false;

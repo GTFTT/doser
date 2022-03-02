@@ -89,7 +89,7 @@ export class Doser2 {
           .then(() => console.log('Tick done'))
           .catch(e => console.error('Tick with error'));
       }, this.tickingIntervalTime);
-    }, this.randomStartTimeInterval);
+    }, Math.random()*this.randomStartTimeInterval);
   }
 
   stop () {
