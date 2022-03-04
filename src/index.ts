@@ -1,4 +1,4 @@
-import {Doser2} from "./doser2";
+import {Doser} from "./doser";
 
 // Tutorial: https://khalilstemmler.com/blogs/typescript/node-starter-project/
 // https://blog.appsignal.com/2022/01/19/how-to-set-up-a-nodejs-project-with-typescript.html
@@ -8,7 +8,7 @@ import {Doser2} from "./doser2";
 let timeout = undefined;
 
 function start() {
-  const doser = new Doser2()//32
+  const doser = new Doser()//32
 
   console.log('Started DDOSing...')
   doser.start(); //Start DDOSing
